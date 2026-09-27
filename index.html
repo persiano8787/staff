@@ -142,7 +142,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
 .c.sel{box-shadow:0 0 0 2px var(--ink)}
 
 /* dettaglio */
-.detail{position:fixed;left:8px;right:8px;bottom:calc(var(--navh, var(--nav)) + 10px + env(safe-area-inset-bottom,0px));z-index:25;max-width:640px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 42px 10px 14px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.detail{position:fixed;left:8px;right:8px;bottom:calc(max(var(--navh, 0px), var(--nav)) + 10px + env(safe-area-inset-bottom,0px));z-index:25;max-width:640px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 42px 10px 14px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
 .detail .x{position:absolute;right:8px;top:8px;border:0;background:none;font-size:20px;cursor:pointer;color:var(--muted)}
 .detail .t{font-weight:700}
 .detail .m{font-size:13px;color:var(--muted)}
@@ -172,7 +172,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
 @media (max-width:760px){
   :root{--nav:62px}
   body{font-size:14px}
-  main{padding-bottom:calc(var(--navh, var(--nav)) + 24px + env(safe-area-inset-bottom,0px))}
+  main.wrap{padding-bottom:calc(max(var(--navh, 0px), var(--nav)) + 28px + env(safe-area-inset-bottom,0px))}
   .tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;border-radius:0;background:var(--panel);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
   .tabs button{flex:1;padding:4px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:12px}
   .tabs button .ic{display:block;font-size:18px;line-height:1.1}
@@ -266,6 +266,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   <section id="v-info" class="hidden">
     <div class="card"><h2>Legenda</h2><div class="lg" id="legend"></div></div>
     <div class="card"><h2>Dipendenti per reparto</h2><div class="kv" id="perDept"></div></div>
+    <div class="card"><h2>Diagnostica layout</h2><p id="diag" style="margin:0;font:12px/1.5 monospace;color:var(--muted);white-space:pre-wrap"></p></div>
     <div class="card"><h2>Roster caricati</h2><p id="cacheInfo" class="hidden" style="margin:0 0 8px;font-weight:600;font-size:13px"></p><div style="overflow-x:auto"><table class="files" id="fileTable"></table></div></div>
     <div class="card"><h2>Da controllare</h2>
       <div class="line">
@@ -859,7 +860,27 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
       results.map(r => { const e = cnt(r,'error'), w = cnt(r,'warn');
         return `<tr><td><span class="dot" style="${dc(r.dept)};display:inline-block;margin-right:6px;width:9px;height:9px;border-radius:50%;background:var(--dc)"></span>${esc(dl(r.dept))}</td><td>${r.records.length||r.stats.sheets.length?r.stats.sheets.length:'escluso'}</td><td>${r.stats.shifts}</td><td>${fmtM(r.modified)}</td><td>${e?`<span class="pill p-error">${e}</span> `:''}${w?`<span class="pill p-warn">${w}</span>`:''}${!e&&!w?'—':''}</td><td><button class="x" data-rmfile="${esc(r.fileName||'')}" title="Togli ${esc(r.fileName||r.dept)}" aria-label="Togli ${esc(r.fileName||r.dept)}">×</button></td></tr>`; }).join('');
     renderIssues();
+    renderDiag();
   }
+
+  // Misure vere del fondo pagina, da leggere sul telefono.
+  function renderDiag(){
+    const el = $('diag'); if (!el) return;
+    const t = $('tabs'), m = document.querySelector('main');
+    const cs = getComputedStyle(document.documentElement);
+    const nav = t ? Math.round(t.getBoundingClientRect().height) : 0;
+    const navTop = t ? Math.round(t.getBoundingClientRect().top) : 0;
+    const pad = m ? getComputedStyle(m).paddingBottom : '?';
+    const vv = window.visualViewport ? Math.round(visualViewport.height) : innerHeight;
+    const gap = Math.round(document.documentElement.scrollHeight - (scrollY + innerHeight));
+    el.textContent =
+      'barra alta: ' + nav + 'px   posizione: ' + (t ? getComputedStyle(t).position : '?') + '\n' +
+      'padding-bottom di main: ' + pad + '   (deve essere > barra)\n' +
+      '--navh: ' + (cs.getPropertyValue('--navh').trim() || 'non impostata') + '   --nav: ' + cs.getPropertyValue('--nav').trim() + '\n' +
+      'finestra: ' + innerHeight + 'px   visual viewport: ' + vv + 'px\n' +
+      'bordo alto barra: ' + navTop + 'px   ancora da scorrere: ' + gap + 'px';
+  }
+
   function renderIssues(){
     const l = $('fLevel').value, d = $('fDept').value;
     const list = results.flatMap(r=>r.issues).filter(i=>(!l||i.level===l)&&(!d||i.dept===d));
@@ -927,7 +948,9 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     const t = $('tabs');
     const fixed = t && getComputedStyle(t).position === 'fixed';
     const h = fixed ? Math.round(t.getBoundingClientRect().height) : 0;
-    document.documentElement.style.setProperty('--navh', h > 0 ? h + 'px' : '0px');
+    const r = document.documentElement.style;
+    if (h > 0) r.setProperty('--navh', h + 'px'); else r.removeProperty('--navh');
+    if (typeof renderDiag === 'function') renderDiag();
   }
   syncNav();
   if (window.ResizeObserver) new ResizeObserver(syncNav).observe($('tabs'));
