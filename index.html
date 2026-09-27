@@ -157,6 +157,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
 .files{width:100%;border-collapse:collapse;font-size:13px}
 .files td,.files th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
 .files th{color:var(--muted);font-weight:600}
+.files .x{border:0;background:color-mix(in srgb,var(--sick) 15%,transparent);color:var(--sick);border-radius:6px;width:24px;height:24px;font-size:16px;line-height:1;cursor:pointer}
 .files td:first-child,.files th:first-child{text-align:left}
 .lg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 12px;font-size:13px}
 .lg span{display:flex;align-items:center;gap:8px}
@@ -199,7 +200,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   </nav>
   <div class="status">
     <span class="fi" id="fileInfo"></span>
-    <label class="ibtn hidden" id="reload" title="Ricarica i file">⟳<input type="file" id="files2" multiple class="hidden" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
+    <label class="ibtn hidden" id="reload" title="Aggiungi o aggiorna i rota">＋<input type="file" id="files2" multiple class="hidden" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"></label>
     <button class="ibtn hidden" id="install" title="Installa l'app">⬇ Installa</button>
     <button class="ibtn" id="theme" title="Tema chiaro o scuro">◐</button>
   </div>
@@ -209,7 +210,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   <label class="drop" id="drop">
     <input type="file" id="files" multiple accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12">
     <h2>Carica i rota</h2>
-    <p>Seleziona tutti i file .xlsx dei reparti insieme. Vengono solo letti, mai modificati.</p>
+    <p>Seleziona i file .xlsx dei reparti. Puoi caricarli anche uno alla volta, da cartelle diverse: si sommano. Vengono solo letti, mai modificati.</p>
     <div class="bands"><span style="background:var(--y)"></span><span style="background:var(--m)"></span><span style="background:var(--b)"></span></div>
   </label>
 
@@ -566,6 +567,26 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   }
   const readCache = () => idb('readonly', s => s.get(DB.key)).catch(() => null);
 
+  // I rota si sommano. Sul telefono stanno in cartelle diverse e il selettore
+  // ne prende una alla volta, quindi si caricano in piu' riprese. Un file con
+  // lo stesso nome sostituisce quello caricato prima.
+  const fileKey = r => (r.fileName || r.dept || '').toLowerCase();
+
+  function mergeResults(before, added){
+    const kept = before.filter(o => !added.some(n => fileKey(n) === fileKey(o)));
+    const merged = [...kept, ...added];
+    // Due file per lo stesso reparto fanno comparire i turni doppi: va detto.
+    const byDept = {};
+    merged.forEach(r => { (byDept[r.dept] = byDept[r.dept] || []).push(r.fileName); });
+    merged.forEach(r => {
+      r.issues = (r.issues || []).filter(i => i.dup !== true);
+      const names = byDept[r.dept] || [];
+      if (names.length > 1) r.issues.push({ level:'warn', dup:true, dept:r.dept,
+        msg:'Due file caricati per lo stesso reparto: i turni possono comparire doppi', where:names.join(', ') });
+    });
+    return merged;
+  }
+
   async function load(list){
     const files = [...list].filter(f => /\.xls[xm]$/i.test(f.name));
     if (!files.length) return;
@@ -580,9 +601,27 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
           issues:[{level:'error', dept:f.name, msg:'File non leggibile: '+e.message, where:''}]});
       }
     }
-    const meta = { loadedAt: Date.now(), fileCount: files.length };
-    hydrate(res, meta);
-    saveCache({ results: res, meta, v: 1 });
+    const merged = mergeResults(results, res);
+    const meta = { loadedAt: Date.now(), fileCount: merged.length };
+    hydrate(merged, meta);
+    saveCache({ results: merged, meta, v: 1 });
+  }
+
+  // Togli un rota caricato. Se era l'ultimo, torna alla schermata iniziale.
+  function removeFile(name){
+    const keep = results.filter(r => r.fileName !== name);
+    if (keep.length === results.length) return;
+    if (!keep.length) return clearAll();
+    const meta = { loadedAt: Date.now(), fileCount: keep.length };
+    hydrate(mergeResults(keep, []), meta);
+    saveCache({ results: keep, meta, v: 1 });
+  }
+
+  // Togliere l'ultimo rota svuota la memoria e ricarica la pagina: si torna
+  // alla schermata di caricamento senza dover disfare a mano tutte le viste.
+  async function clearAll(){
+    try { await idb('readwrite', s => s.delete(DB.key)); } catch(e){}
+    location.reload();
   }
 
   function hydrate(res, meta){
@@ -816,9 +855,9 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
       `<span></span><div style="font-weight:700">Totale (nomi unici)</div><b style="font-size:18px">${new Set(records.map(r=>r.name)).size}</b>`;
     const cnt = (r,l) => r.issues.filter(i=>i.level===l).length;
     const fmtM = t => { if (!t) return '—'; const d = new Date(t); return `${d.getDate()}/${d.getMonth()+1} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
-    $('fileTable').innerHTML = '<tr><th>Reparto</th><th>Mesi</th><th>Turni</th><th>Modificato</th><th>Avvisi</th></tr>' +
+    $('fileTable').innerHTML = '<tr><th>Reparto</th><th>Mesi</th><th>Turni</th><th>Modificato</th><th>Avvisi</th><th></th></tr>' +
       results.map(r => { const e = cnt(r,'error'), w = cnt(r,'warn');
-        return `<tr><td><span class="dot" style="${dc(r.dept)};display:inline-block;margin-right:6px;width:9px;height:9px;border-radius:50%;background:var(--dc)"></span>${esc(dl(r.dept))}</td><td>${r.records.length||r.stats.sheets.length?r.stats.sheets.length:'escluso'}</td><td>${r.stats.shifts}</td><td>${fmtM(r.modified)}</td><td>${e?`<span class="pill p-error">${e}</span> `:''}${w?`<span class="pill p-warn">${w}</span>`:''}${!e&&!w?'—':''}</td></tr>`; }).join('');
+        return `<tr><td><span class="dot" style="${dc(r.dept)};display:inline-block;margin-right:6px;width:9px;height:9px;border-radius:50%;background:var(--dc)"></span>${esc(dl(r.dept))}</td><td>${r.records.length||r.stats.sheets.length?r.stats.sheets.length:'escluso'}</td><td>${r.stats.shifts}</td><td>${fmtM(r.modified)}</td><td>${e?`<span class="pill p-error">${e}</span> `:''}${w?`<span class="pill p-warn">${w}</span>`:''}${!e&&!w?'—':''}</td><td><button class="x" data-rmfile="${esc(r.fileName||'')}" title="Togli ${esc(r.fileName||r.dept)}" aria-label="Togli ${esc(r.fileName||r.dept)}">×</button></td></tr>`; }).join('');
     renderIssues();
   }
   function renderIssues(){
@@ -865,6 +904,10 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   $('pName').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); addPerson(e.target.value); } });
   $('pName').addEventListener('change', e => { if (records.some(r=>r.name===e.target.value)) addPerson(e.target.value); });
   $('dClose').addEventListener('click', hideDetail);
+  $('fileTable').addEventListener('click', e => {
+    const b = e.target.closest('[data-rmfile]');
+    if (b) removeFile(b.dataset.rmfile);
+  });
   $('fLevel').addEventListener('change', renderIssues);
   $('fDept').addEventListener('change', renderIssues);
   $('theme').addEventListener('click', () => { const r = document.documentElement;
