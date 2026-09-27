@@ -142,7 +142,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
 .c.sel{box-shadow:0 0 0 2px var(--ink)}
 
 /* dettaglio */
-.detail{position:fixed;left:8px;right:8px;bottom:calc(var(--nav) + 10px + env(safe-area-inset-bottom,0px));z-index:25;max-width:640px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 42px 10px 14px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.detail{position:fixed;left:8px;right:8px;bottom:calc(var(--navh, var(--nav)) + 10px + env(safe-area-inset-bottom,0px));z-index:25;max-width:640px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 42px 10px 14px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
 .detail .x{position:absolute;right:8px;top:8px;border:0;background:none;font-size:20px;cursor:pointer;color:var(--muted)}
 .detail .t{font-weight:700}
 .detail .m{font-size:13px;color:var(--muted)}
@@ -172,7 +172,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
 @media (max-width:760px){
   :root{--nav:62px}
   body{font-size:14px}
-  main{padding-bottom:calc(var(--nav) + 20px)}
+  main{padding-bottom:calc(var(--navh, var(--nav)) + 24px + env(safe-area-inset-bottom,0px))}
   .tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;border-radius:0;background:var(--panel);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
   .tabs button{flex:1;padding:4px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:12px}
   .tabs button .ic{display:block;font-size:18px;line-height:1.1}
@@ -921,7 +921,20 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('install').classList.remove('hidden'); });
   $('install').addEventListener('click', async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; $('install').classList.add('hidden'); });
   addEventListener('appinstalled', () => $('install').classList.add('hidden'));
-  let rw; addEventListener('resize', () => { clearTimeout(rw); rw = setTimeout(renderDuty, 200); });
+  // Altezza vera della barra in basso: senza questa misura l'ultima riga
+  // finisce sotto la barra quando si scorre in fondo.
+  function syncNav(){
+    const t = $('tabs');
+    const fixed = t && getComputedStyle(t).position === 'fixed';
+    const h = fixed ? Math.round(t.getBoundingClientRect().height) : 0;
+    document.documentElement.style.setProperty('--navh', h > 0 ? h + 'px' : '0px');
+  }
+  syncNav();
+  if (window.ResizeObserver) new ResizeObserver(syncNav).observe($('tabs'));
+  if (window.visualViewport) visualViewport.addEventListener('resize', syncNav);
+  addEventListener('orientationchange', syncNav);
+
+  let rw; addEventListener('resize', () => { syncNav(); clearTimeout(rw); rw = setTimeout(renderDuty, 200); });
   setInterval(() => { if (st.view==='duty' && st.preset==='now' && records.length) applyPreset('now'); }, 60000);
 })();
 </script>
