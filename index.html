@@ -598,7 +598,11 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     for (const f of files){
       try{
         const wb = XLSX.read(await f.arrayBuffer(), {cellDates:true});
-        const r = RosterParser.parseWorkbook(XLSX, wb, f.name); r.modified = f.lastModified;
+        const r = RosterParser.parseWorkbook(XLSX, wb, f.name);
+        // Data dell'ultimo salvataggio scritta dentro l'xlsx (quella di HR): la data del file
+        // sul telefono e' quella della copia condivisa o scaricata, non dice se il rota e' nuovo.
+        const saved = wb.Props && wb.Props.ModifiedDate ? +new Date(wb.Props.ModifiedDate) : NaN;
+        r.modified = saved > 0 ? saved : f.lastModified;
         res.push(r);
       }catch(e){
         res.push({dept:f.name.toUpperCase(), fileName:f.name, records:[], stats:{sheets:[],employees:0,shifts:0,absences:0,off:0},
