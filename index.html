@@ -269,7 +269,6 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   <section id="v-info" class="hidden">
     <div class="card"><h2>Legenda</h2><div class="lg" id="legend"></div></div>
     <div class="card"><h2>Dipendenti per reparto</h2><div class="kv" id="perDept"></div></div>
-    <div class="card"><h2>Diagnostica layout</h2><p id="diag" style="margin:0;font:12px/1.5 monospace;color:var(--muted);white-space:pre-wrap"></p></div>
     <div class="card"><h2>Roster caricati</h2><p id="cacheInfo" class="hidden" style="margin:0 0 8px;font-weight:600;font-size:13px"></p><div style="overflow-x:auto"><table class="files" id="fileTable"></table></div></div>
     <div class="card"><h2>Da controllare</h2>
       <div class="line">
@@ -877,25 +876,6 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
       results.map(r => { const e = cnt(r,'error'), w = cnt(r,'warn');
         return `<tr><td><span class="dot" style="${dc(r.dept)};display:inline-block;margin-right:6px;width:9px;height:9px;border-radius:50%;background:var(--dc)"></span>${esc(dl(r.dept))}</td><td>${r.records.length||r.stats.sheets.length?r.stats.sheets.length:'escluso'}</td><td>${r.stats.shifts}</td><td>${fmtM(r.modified)}</td><td>${e?`<span class="pill p-error">${e}</span> `:''}${w?`<span class="pill p-warn">${w}</span>`:''}${!e&&!w?'—':''}</td><td><button class="x" data-rmfile="${esc(r.fileName||'')}" title="Togli ${esc(r.fileName||r.dept)}" aria-label="Togli ${esc(r.fileName||r.dept)}">×</button></td></tr>`; }).join('');
     renderIssues();
-    renderDiag();
-  }
-
-  // Misure vere del fondo pagina, da leggere sul telefono.
-  function renderDiag(){
-    const el = $('diag'); if (!el) return;
-    const t = $('tabs'), m = document.querySelector('main');
-    const cs = getComputedStyle(document.documentElement);
-    const nav = t ? Math.round(t.getBoundingClientRect().height) : 0;
-    const navTop = t ? Math.round(t.getBoundingClientRect().top) : 0;
-    const pad = m ? getComputedStyle(m).paddingBottom : '?';
-    const vv = window.visualViewport ? Math.round(visualViewport.height) : innerHeight;
-    const gap = Math.round(document.documentElement.scrollHeight - (scrollY + innerHeight));
-    el.textContent =
-      'barra alta: ' + nav + 'px   posizione: ' + (t ? getComputedStyle(t).position : '?') + '\n' +
-      'padding-bottom di main: ' + pad + '   (deve essere > barra)\n' +
-      '--navh: ' + (cs.getPropertyValue('--navh').trim() || 'non impostata') + '   --nav: ' + cs.getPropertyValue('--nav').trim() + '\n' +
-      'finestra: ' + innerHeight + 'px   visual viewport: ' + vv + 'px\n' +
-      'bordo alto barra: ' + navTop + 'px   ancora da scorrere: ' + gap + 'px';
   }
 
   function renderIssues(){
@@ -984,7 +964,6 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     const h = fixed ? Math.round(t.getBoundingClientRect().height) : 0;
     const r = document.documentElement.style;
     if (h > 0) r.setProperty('--navh', h + 'px'); else r.removeProperty('--navh');
-    if (typeof renderDiag === 'function') renderDiag();
   }
   syncNav();
   if (window.ResizeObserver) new ResizeObserver(syncNav).observe($('tabs'));
