@@ -59,6 +59,11 @@ h1,h2,h3{font-family:"Barlow Semi Condensed",Barlow,Arial,sans-serif;margin:0}
 .line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0}
 .inp{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-height:38px}
 .grow{flex:1 1 140px;min-width:0}
+#presets,#bands{gap:6px}
+#presets .inp{flex:1 1 130px;min-width:0}
+#bands{flex-wrap:nowrap}
+#bands .pp{padding:8px 11px}
+#bands .inp{flex:1 1 0;min-width:0;padding:8px 4px}
 .lbl{font-size:12px;font-weight:600;color:var(--muted)}
 .sub{display:flex;background:var(--panel2);border-radius:10px;padding:4px;gap:4px;margin-top:12px}
 .sub button{flex:1;border:0;background:none;padding:8px;border-radius:8px;font-weight:700;color:var(--muted);cursor:pointer}
@@ -81,7 +86,12 @@ h1,h2,h3{font-family:"Barlow Semi Condensed",Barlow,Arial,sans-serif;margin:0}
 /* riquadri reparti */
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;margin:6px 0 10px}
 .tile{background:var(--panel);border-radius:10px;padding:8px 10px;border-left:5px solid var(--dc);cursor:pointer;min-width:0}
-.tile.off{opacity:.4}
+.tile.on{background:color-mix(in srgb,var(--dc) 22%,var(--panel));box-shadow:inset 0 0 0 2px var(--dc)}
+.tile.none{display:flex;align-items:center;justify-content:center;border-left-color:var(--line);color:var(--muted);font-weight:700}
+.dh{display:flex;align-items:center;gap:10px;padding:9px 12px;background:color-mix(in srgb,var(--dc) 13%,var(--panel));border-left:6px solid var(--dc)}
+.dh h3{font-size:17px}
+.dh .cnt{background:var(--dc);color:#fff;border-radius:20px;padding:0 9px;font-weight:700;font-size:14px}
+.dh .ab{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
 .tile .n{font-family:"Barlow Semi Condensed",sans-serif;font-size:28px;font-weight:700;line-height:1}
 .tile .l{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tile .s{font-size:11px;color:var(--muted)}
@@ -113,6 +123,8 @@ h1,h2,h3{font-family:"Barlow Semi Condensed",Barlow,Arial,sans-serif;margin:0}
 .bar.cr{border-top-right-radius:0;border-bottom-right-radius:0}
 .est{background:repeating-linear-gradient(135deg,var(--bc) 0 7px,color-mix(in srgb,var(--bc) 65%,#fff) 7px 11px)!important;outline:2px dashed var(--ink);outline-offset:-2px}
 .now{position:absolute;top:0;bottom:0;width:2px;background:var(--sick);z-index:2;pointer-events:none}
+/* poker: barra chiara con bordo pieno, per distinguerla dal resto di GAMING&POKER */
+.bar.pk{background:color-mix(in srgb,var(--bc) 30%,var(--panel));color:var(--ink);box-shadow:inset 0 0 0 2px var(--bc)}
 .k-y{--bc:var(--y);--bi:var(--y-ink)} .k-m{--bc:var(--m);--bi:var(--m-ink)} .k-b{--bc:var(--b);--bi:var(--b-ink)}
 
 /* griglie turni */
@@ -183,8 +195,10 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   .tiles{grid-template-columns:repeat(4,1fr);gap:6px}
   .tile{padding:6px 7px;border-left-width:4px}
   .tile .n{font-size:22px}
-  .tile .l{font-size:11px}
+  .tile .l{font-size:11px;white-space:normal;line-height:1.15}
   .tile .s{display:none}
+  #bands input::-webkit-calendar-picker-indicator{display:none}
+  #bands .inp{text-align:center}
   .status .fi{display:none}
   .gh{padding:10px}
   .gh h3{font-size:16px}
@@ -219,26 +233,20 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
 
   <!-- IN SERVIZIO -->
   <section id="v-duty" class="hidden">
-    <div class="scrollx" id="presets">
-      <button class="pp on" data-p="now">Adesso</button>
+    <div class="line" id="presets">
+      <button class="pp on" data-p="now">Now</button>
       <button class="pp" data-p="today">Oggi</button>
       <button class="pp" data-p="tomorrow">Domani</button>
-      <button class="pp sw" data-p="s1" style="--sw:var(--y)">07–15</button>
-      <button class="pp sw" data-p="s2" style="--sw:var(--m)">15–23</button>
-      <button class="pp sw" data-p="s3" style="--sw:var(--b)">23–07</button>
-      <button class="pp" data-p="custom">Personalizza</button>
+      <input type="date" id="wDay" class="inp" aria-label="Giornata">
     </div>
-    <div class="line" id="dayLine">
-      <span class="lbl">Giorno</span><input type="date" id="wDay" class="inp">
-      <input type="search" id="wName" class="inp grow" placeholder="Filtra nome">
-    </div>
-    <div class="line hidden" id="customLine">
-      <span class="lbl">Dalle</span><input type="datetime-local" id="wFrom" class="inp grow">
-      <span class="lbl">Alle</span><input type="datetime-local" id="wTo" class="inp grow">
+    <div class="line" id="bands">
+      <button class="pp sw" data-p="s1" style="--sw:var(--y)">7</button>
+      <button class="pp sw" data-p="s2" style="--sw:var(--m)">15</button>
+      <button class="pp sw" data-p="s3" style="--sw:var(--b)">23</button>
+      <input type="time" id="tFrom" class="inp" aria-label="Da">–<input type="time" id="tTo" class="inp" aria-label="A">
     </div>
     <div class="tiles" id="tiles"></div>
-    <div class="line"><span class="period" id="wLabel"></span>
-      <span class="tool"><button data-all="open" data-t="duty">Espandi</button><button data-all="close" data-t="duty">Comprimi</button></span></div>
+    <div class="line"><input type="search" id="wName" class="inp grow" placeholder="Filtra nome"></div>
     <div id="timeline"></div>
   </section>
 
@@ -292,7 +300,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
 
   // ---- Configurazione (qui si aggiornano i codici man mano che vengono chiariti) ----
   const CONFIG = {
-    excluded: ['KITCHEN'],
+    excluded: [],
     offCodes: { 'X': 'Riposo' },
     absenceCodes: { 'AL': 'Ferie', 'AL10': 'Ferie (10h)', 'SICK': 'Malattia' },
     // Assenze ipotizzate: trattate come "non in servizio" finché HR non conferma
@@ -319,9 +327,11 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     return ymd(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate());
   };
 
+  // "SEC&DRIV Roster 2026.xlsx" e "SEC_DRIV_Roster_2026.xlsx" -> "SEC_DRIV": i nomi su OneDrive
+  // hanno spazi e "&", le chiavi di CONFIG (overrides, defaultHours, excluded) usano "_".
   function deptFromFileName(name) {
-    const m = name.replace(/\.[^.]+$/, '').match(/^(.*?)_Roster/i);
-    return (m ? m[1] : name).toUpperCase();
+    const m = name.replace(/\.[^.]+$/, '').match(/^(.*?)[\s_]+Roster/i);
+    return (m ? m[1] : name).toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '');
   }
 
   // Legge "Import Template": mappa codice -> orario e nome -> codice dipendente
@@ -492,7 +502,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const pad = n => String(n).padStart(2,'0');
-  const DL = {CASHDESK:'Cashdesk', CLEANER:'Cleaner', F_B:'F&B', HOST:'Host', LIVEGAME:'Live Game', MANAGER:'Manager', SEC_DRIV:'Security/Driver', KITCHEN:'Kitchen'};
+  const DL = {CASHDESK:'CASHDESK', CLEANER:'CLEANER', F_B:'F&B', HOST:'HOST&REC', KITCHEN:'KITCHEN', LIVEGAME:'GAMING&POKER', MANAGER:'MANAGERS', SEC_DRIV:'SEC&DRIVER'};
   const dl = d => DL[d] || d;
   const dc = d => `--dc:var(--d-${d},#888)`;
   const WD = ['dom','lun','mar','mer','gio','ven','sab'];
@@ -500,7 +510,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   const MAX_DAYS = 62;
 
   let results = [], records = [], depts = [], short = new Map(), loadedAt = null;
-  const st = { view:'duty', preset:'now', deptOn:new Set(), people:[], range:'14', sub:'cmp',
+  const st = { view:'duty', preset:'now', day:'', F:'', T:'', dept:'*', people:[], range:'14', sub:'cmp',
                open:{ duty:new Set(), ros:new Set() }, touched:{ duty:false, ros:false } };
 
   // ---------- date ----------
@@ -635,7 +645,6 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     results = res.sort((a,b)=>a.dept.localeCompare(b.dept));
     records = results.flatMap(r => r.records);
     depts = results.filter(r=>r.records.length).map(r=>r.dept);
-    st.deptOn = new Set(depts);
     short = buildShort([...new Set(records.map(r=>r.name))]);
     loadedAt = new Date(meta.loadedAt);
     const today = fmtD(new Date()) === fmtD(loadedAt);
@@ -643,7 +652,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     $('drop').classList.add('hidden'); ['tabs','reload'].forEach(id=>$(id).classList.remove('hidden'));
     $('names').innerHTML = [...new Set(records.map(r=>r.name))].sort().map(n=>`<option value="${esc(n)}">${esc(sn(n))}</option>`).join('');
     $('fDept').innerHTML = '<option value="">Tutti i reparti</option>' + results.map(r=>`<option value="${esc(r.dept)}">${esc(dl(r.dept))}</option>`).join('');
-    $('wDay').value = fmtD(new Date());
+    st.day = opDay(new Date());
     applyPreset(st.preset, true); applyRange(st.range, true);
     renderInfo(); show(st.view); checkStale();
   }
@@ -674,28 +683,44 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   function toggleGroup(kind, d){ const s = st.open[kind]; s.has(d) ? s.delete(d) : s.add(d); st.touched[kind] = true; }
 
   // ---------- IN SERVIZIO ----------
+  // Giornata di lavoro: dalle 07:00 alle 06:59 del giorno dopo. All'1:30 "oggi" e' ancora ieri.
+  const DAY_START = 7;
+  const opDay = d => fmtD(new Date(d.getTime() - DAY_START*36e5));
+  const hhmm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  // Ora "HH:MM" dentro la giornata st.day: le ore prima delle 07:00 cadono nel giorno dopo.
+  function inDay(t){
+    const [h, m] = t.split(':').map(Number), x = PD(st.day);
+    x.setHours(DAY_START, 0, 0, 0);
+    return new Date(x.getTime() + (((h - DAY_START + 24) % 24) * 60 + m) * 6e4);
+  }
+
   function applyPreset(p, silent){
+    const n = new Date(), today = opDay(n);
+    if (p==='today') st.day = today;
+    else if (p==='tomorrow') st.day = fmtD(addD(PD(today), 1));
+    if (p==='today' || p==='tomorrow') p = 'day';
     st.preset = p;
-    document.querySelectorAll('#presets .pp').forEach(b=>b.classList.toggle('on', b.dataset.p===p));
-    $('customLine').classList.toggle('hidden', p!=='custom');
-    $('dayLine').querySelector('#wDay').parentElement; // giorno usato da Oggi/fasce
-    const day = $('wDay').value ? PD($('wDay').value) : new Date(); day.setHours(0,0,0,0);
-    const n = new Date(), d0 = new Date(n); d0.setHours(0,0,0,0);
-    const at = (base, h, plus=0) => { const x = addD(base, plus); x.setHours(h,0,0,0); return x; };
     let a, b;
-    if (p==='now'){ a = b = n; }
-    else if (p==='today'){ a = d0; b = addD(d0,1); $('wDay').value = fmtD(d0); }
-    else if (p==='tomorrow'){ a = addD(d0,1); b = addD(d0,2); $('wDay').value = fmtD(a); }
-    else if (p==='s1'){ a = at(day,7); b = at(day,15); }
-    else if (p==='s2'){ a = at(day,15); b = at(day,23); }
-    else if (p==='s3'){ a = at(day,23); b = at(day,7,1); }
-    if (a){ $('wFrom').value = fmtDT(a); $('wTo').value = fmtDT(b); }
+    if (p==='now'){ st.day = today; a = b = n; }
+    else if (p==='day'){ a = inDay('07:00'); b = new Date(a.getTime() + 864e5); }
+    else if (p==='s1'){ a = inDay('07:00'); b = inDay('15:00'); }
+    else if (p==='s2'){ a = inDay('15:00'); b = inDay('23:00'); }
+    else if (p==='s3'){ a = inDay('23:00'); b = new Date(inDay('07:00').getTime() + 864e5); }
+    else {                                                              // personalizzato dai due orari
+      a = inDay($('tFrom').value || '07:00'); b = inDay($('tTo').value || '07:00');
+      if (b <= a) b = new Date(b.getTime() + 864e5);
+    }
+    st.F = fmtDT(a); st.T = fmtDT(b);
+    $('wDay').value = st.day;
+    if (p !== 'custom'){ $('tFrom').value = hhmm(a); $('tTo').value = hhmm(b); }
+    const on = { now: p==='now', today: p==='day' && st.day===today, tomorrow: p==='day' && st.day===fmtD(addD(PD(today),1)), s1: p==='s1', s2: p==='s2', s3: p==='s3' };
+    document.querySelectorAll('#presets .pp, #bands .pp').forEach(b => b.classList.toggle('on', !!on[b.dataset.p]));
     if (!silent) renderDuty();
   }
 
   function renderDuty(){
     if (st.view!=='duty' || !records.length) return;
-    const F = $('wFrom').value, T = $('wTo').value; if (!F || !T) return;
+    const F = st.F, T = st.T; if (!F || !T) return;
     const inst = F >= T, q = $('wName').value.trim().toUpperCase();
     const match = r => !q || r.name.toUpperCase().includes(q) || sn(r.name).toUpperCase().includes(q);
     const hits = records.filter(r => r.type==='shift' && (inst ? (r.startDT<=F && F<r.endDT) : (r.startDT<T && r.endDT>F)) && match(r));
@@ -703,17 +728,21 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     const dF = F.slice(0,10), dT = inst ? dF : fmtD(new Date(P(T).getTime()-1));
     const absent = records.filter(r => r.type==='absence' && r.date>=dF && r.date<=dT && !working.has(r.name) && match(r));
 
-    $('wLabel').textContent = inst ? `Adesso · ${dayTxt(dF)} ${F.slice(11)}` : `${dayTxt(dF)} ${F.slice(11)} → ${dF===T.slice(0,10)?'':dayTxt(T.slice(0,10))+' '}${T.slice(11)}`;
 
     const by = {}; hits.forEach(r => (by[r.dept] = by[r.dept] || []).push(r));
     const uq = a => new Set((a||[]).map(r=>r.name)).size;
-    const tot = depts.filter(d=>st.deptOn.has(d)).reduce((s,d)=>s+uq(by[d]),0);
-    $('tiles').innerHTML = `<div class="tile" data-d="*" style="--dc:var(--ink)"><div class="n">${tot}</div><div class="l">Totale</div><div class="s">tocca per tutti</div></div>` +
-      depts.map(d => { const a = new Set(absent.filter(r=>r.dept===d).map(r=>r.name)).size;
-        return `<div class="tile ${st.deptOn.has(d)?'':'off'}" data-d="${d}" style="${dc(d)}"><div class="n">${uq(by[d])}</div><div class="l">${esc(dl(d))}</div><div class="s">${a} ${a===1?'assente':'assenti'}</div></div>`; }).join('');
+    // Un reparto alla volta: ALL li mostra tutti, NONE svuota la vista.
+    if (st.dept !== '*' && st.dept && !depts.includes(st.dept)) st.dept = '*';
+    const tot = depts.reduce((s,d)=>s+uq(by[d]),0), totA = new Set(absent.map(r=>r.name)).size;
+    const lab = t => esc(t).replace(/&amp;/g, '&amp;<wbr>');
+    const tile = (d, n, a, l, style) => `<div class="tile ${st.dept===d?'on':''}" data-d="${d}" style="${style}"><div class="n">${n}</div><div class="l">${lab(l)}</div><div class="s">${a} ${a===1?'assente':'assenti'}</div></div>`;
+    $('tiles').innerHTML = tile('*', tot, totA, 'ALL', '--dc:var(--ink)') +
+      depts.map(d => tile(d, uq(by[d]), new Set(absent.filter(r=>r.dept===d).map(r=>r.name)).size, dl(d), dc(d))).join('') +
+      `<div class="tile none ${st.dept===''?'on':''}" data-d="" style="--dc:var(--muted)">NONE</div>`;
 
-    if (!st.touched.duty) st.open.duty = new Set(depts);           // di default tutti aperti
-    if (!hits.length && !absent.length){ $('timeline').innerHTML = '<div class="grp"><div class="empty">Nessun turno in questo periodo.</div></div>'; return; }
+    if (!st.dept){ $('timeline').innerHTML = ''; return; }
+    const shown = st.dept==='*' ? depts : [st.dept];
+    if (!hits.some(r=>shown.includes(r.dept)) && !absent.some(r=>shown.includes(r.dept))){ $('timeline').innerHTML = '<div class="grp"><div class="empty">Nessun turno in questo periodo.</div></div>'; return; }
 
     let A = P(F).getTime(), B = P(T).getTime();
     if (inst && hits.length){ A = Math.min(...hits.map(r=>P(r.startDT).getTime())); B = Math.max(...hits.map(r=>P(r.endDT).getTime())); }
@@ -730,7 +759,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     const now = Date.now(), nowL = (now>A && now<B) ? `<div class="now" style="left:${pct(now)}%"></div>` : '';
 
     let html = '';
-    for (const d of depts.filter(x=>st.deptOn.has(x))){
+    for (const d of shown){
       const rows = (by[d]||[]).sort((a,b)=>a.startDT.localeCompare(b.startDT) || a.name.localeCompare(b.name));
       const ab = [...new Map(absent.filter(r=>r.dept===d).map(r=>[r.name,r])).values()];
       if (!rows.length && !ab.length) continue;
@@ -739,13 +768,14 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
       for (const [name, rs] of per){
         const bars = rs.map(r => { const s = P(r.startDT).getTime(), e = P(r.endDT).getTime();
           const l = Math.max(0,pct(s)), w = Math.min(100,pct(e)) - l;
-          return `<div class="bar k-${band(r)} ${r.estimated?'est':''} ${s<A?'cl':''} ${e>B?'cr':''}" style="left:${l}%;width:${w}%" data-r="${records.indexOf(r)}">${shiftShort(r)}</div>`; }).join('');
+          return `<div class="bar k-${band(r)} ${/poker/i.test(r.role)?'pk':''} ${r.estimated?'est':''} ${s<A?'cl':''} ${e>B?'cr':''}" style="left:${l}%;width:${w}%" data-r="${records.indexOf(r)}">${shiftShort(r)}</div>`; }).join('');
         body += `<div class="tr"><div class="who"><span class="nm">${esc(sn(name))}</span><span class="rl">${esc(rs[0].role)}</span></div><div class="trk">${gl}${bars}${nowL}</div></div>`;
       }
       if (ab.length) body += `<div class="abs-line">Assenti: ${ab.map(r=>`${esc(sn(r.name))} (${esc(r.code)})`).join(', ')}</div>`;
-      html += group('duty', d, `<h3>${esc(dl(d))}</h3><span class="cnt">${per.size}</span><span class="ab">${ab.length?ab.length+(ab.length===1?' assente':' assenti'):''}</span>`, body);
+      const head = st.dept==='*' ? `<div class="dh"><h3>${esc(dl(d))}</h3><span class="cnt">${per.size}</span><span class="ab">${ab.length?ab.length+(ab.length===1?' assente':' assenti'):''}</span></div>` : '';
+      html += `<div class="grp" style="${dc(d)}">${head}${body}</div>`;
     }
-    $('timeline').innerHTML = html || '<div class="grp"><div class="empty">Nessun reparto selezionato.</div></div>';
+    $('timeline').innerHTML = html || '<div class="grp"><div class="empty">Nessun turno in questo periodo.</div></div>';
   }
 
   // ---------- TURNI ----------
@@ -785,7 +815,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     if (r.type==='shift') return `<div class="c s k-${band(r)} ${r.estimated?'est':''}" data-r="${i}">${hm(r.start)}${nextDay(r)?'›':''}</div>`;
     if (r.type==='absence') return `<div class="c ${r.code==='SICK'?'k':'a'}" data-r="${i}">${esc(r.code)}</div>`;
     if (r.type==='off') return `<div class="c o" data-r="${i}">X</div>`;
-    return `<div class="c u" data-r="${i}">?</div>`;
+    return `<div class="c u" data-r="${i}">${esc(r.code || '?')}</div>`;
   }
 
   function renderShifts(){
@@ -864,7 +894,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     $('legend').innerHTML =
       L('c s k-y','07','Fascia 07–15') + L('c s k-m','15','Fascia 15–23') + L('c s k-b','23','Fascia 23–07') +
       L('c s k-m est','18','Fine turno stimata') + L('c o','›','Finisce il giorno dopo').replace('<i class="c o">','<i class="c s k-b">23›').replace('›</i>','</i>') +
-      L('c a','AL','Ferie / assenza') + L('c k','SICK','Malattia') + L('c o','X','Riposo') + L('c u','?','Codice sconosciuto') +
+      `<span><i class="bar k-m pk" style="position:static;display:inline-flex;height:20px;margin-right:6px">18</i>Poker</span>` + L('c a','AL','Ferie / assenza') + L('c k','SICK','Malattia') + L('c o','X','Riposo') + L('c u','?','Codice sconosciuto') +
       `<span style="grid-column:1/-1;color:var(--muted)">Il colore segue la fascia in cui cade la maggior parte del turno (es. 19–07 è blu, 18–02 è magenta). Il numero nella casella è l'ora di inizio.</span>`;
     const people = d => new Set(records.filter(r=>r.dept===d).map(r=>r.name)).size;
     const max = Math.max(1, ...depts.map(people));
@@ -893,17 +923,12 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   drop.addEventListener('drop', e => load(e.dataTransfer.files));
   $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(b.dataset.v); });
 
-  $('presets').addEventListener('click', e => { const b = e.target.closest('.pp'); if (b) applyPreset(b.dataset.p); });
-  $('wDay').addEventListener('change', () => { if (['s1','s2','s3'].includes(st.preset)) applyPreset(st.preset); else applyPreset('s1'); });
-  ['wFrom','wTo'].forEach(id => $(id).addEventListener('change', renderDuty));
+  ['presets','bands'].forEach(id => $(id).addEventListener('click', e => { const b = e.target.closest('.pp'); if (b) applyPreset(b.dataset.p); }));
+  // Cambiare giornata tiene la fascia o l'orario scelto; da Now passa alla giornata intera.
+  $('wDay').addEventListener('change', e => { if (!e.target.value) return; st.day = e.target.value; applyPreset(st.preset==='now' ? 'day' : st.preset); });
+  ['tFrom','tTo'].forEach(id => $(id).addEventListener('change', () => applyPreset('custom')));
   $('wName').addEventListener('input', renderDuty);
-  $('tiles').addEventListener('click', e => { const t = e.target.closest('.tile'); if (!t) return;
-    const d = t.dataset.d;
-    if (d==='*') st.deptOn = new Set(depts);
-    else if (st.deptOn.size===depts.length) st.deptOn = new Set([d]);          // primo tocco: solo quel reparto
-    else st.deptOn.has(d) ? st.deptOn.delete(d) : st.deptOn.add(d);
-    if (!st.deptOn.size) st.deptOn = new Set(depts);
-    renderDuty(); });
+  $('tiles').addEventListener('click', e => { const t = e.target.closest('.tile'); if (!t) return; st.dept = t.dataset.d; renderDuty(); });
 
   document.addEventListener('click', e => {
     const g = e.target.closest('[data-g]');
