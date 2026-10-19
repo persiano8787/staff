@@ -8,11 +8,26 @@ const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png',
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => Promise.all(SHELL.map(u => c.add(new Request(u, { mode: u.startsWith('http') ? 'cors' : 'same-origin' })).catch(() => {})))).then(() => self.skipWaiting()));
 });
+// "Condividi su Staff": i file arrivano qui in POST, restano in INBOX finché la pagina non li carica.
+const INBOX = 'sod-inbox';
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION && k !== INBOX).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
+async function receiveShare(req){
+  try{
+    const form = await req.formData();
+    const box = await caches.open(INBOX);
+    let i = 0;
+    for (const f of form.getAll('rota')){
+      if (!(f instanceof File)) continue;
+      await box.put(`./inbox/${Date.now()}-${i++}`, new Response(f, { headers: { 'X-Name': encodeURIComponent(f.name), 'X-Modified': String(f.lastModified || '') } }));
+    }
+  }catch(err){}
+  return Response.redirect('./?condiviso=1', 303);
+}
 self.addEventListener('fetch', e => {
   const req = e.request;
+  if (req.method === 'POST' && new URL(req.url).pathname.endsWith('/condividi')){ e.respondWith(receiveShare(req)); return; }
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   const isPage = req.mode === 'navigate' || (url.origin === location.origin && url.pathname.endsWith('.html'));

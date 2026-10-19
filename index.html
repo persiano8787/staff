@@ -68,6 +68,8 @@ h1,h2,h3{font-family:"Barlow Semi Condensed",Barlow,Arial,sans-serif;margin:0}
 .tool button{border:0;background:none;color:var(--accent);font-weight:700;cursor:pointer;padding:6px 4px}
 
 /* caricamento */
+.stale{display:block;margin:12px 0 0;padding:10px 14px;border-radius:var(--r);background:var(--y);color:var(--y-ink);font-weight:600;font-size:14px;cursor:pointer}
+.stale small{display:block;font-weight:500}
 .drop{margin:36px auto;max-width:560px;display:block;text-align:center;border:2px dashed var(--line);border-radius:16px;background:var(--panel);padding:34px 18px;cursor:pointer}
 .drop.over{border-color:var(--accent)}
 .drop h2{font-size:24px;margin-bottom:6px}
@@ -207,10 +209,11 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
 </div></header>
 
 <main class="wrap">
+  <label class="stale hidden" id="stale" for="files2"></label>
   <label class="drop" id="drop">
     <input type="file" id="files" multiple accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12">
     <h2>Carica i rota</h2>
-    <p>Seleziona i file .xlsx dei reparti. Puoi caricarli anche uno alla volta, da cartelle diverse: si sommano. Vengono solo letti, mai modificati.</p>
+    <p>Seleziona i file .xlsx dei reparti. Puoi caricarli anche uno alla volta, da cartelle diverse: si sommano. Da OneDrive puoi anche selezionarli e usare Condividi → Staff. Vengono solo letti, mai modificati.</p>
     <div class="bands"><span style="background:var(--y)"></span><span style="background:var(--m)"></span><span style="background:var(--b)"></span></div>
   </label>
 
@@ -639,7 +642,17 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     $('fDept').innerHTML = '<option value="">Tutti i reparti</option>' + results.map(r=>`<option value="${esc(r.dept)}">${esc(dl(r.dept))}</option>`).join('');
     $('wDay').value = fmtD(new Date());
     applyPreset(st.preset, true); applyRange(st.range, true);
-    renderInfo(); show(st.view);
+    renderInfo(); show(st.view); checkStale();
+  }
+
+  // Avviso "dati vecchi": i rota cambiano ogni giorno, dopo 12 ore dall'ultimo caricamento va detto.
+  const STALE_H = 12;
+  function checkStale(){
+    const el = $('stale');
+    if (!loadedAt || !results.length){ el.classList.add('hidden'); return; }
+    const h = Math.floor((Date.now() - loadedAt) / 3600000);
+    el.classList.toggle('hidden', h < STALE_H);
+    if (h >= STALE_H) el.innerHTML = `Dati caricati ${h < 48 ? h + ' ore' : Math.floor(h/24) + ' giorni'} fa: i turni potrebbero essere cambiati.<small>Tocca qui o ＋ per ricaricare i rota, oppure condividili da OneDrive.</small>`;
   }
 
   function show(v){
@@ -933,7 +946,24 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   $('fDept').addEventListener('change', renderIssues);
   $('theme').addEventListener('click', () => { const r = document.documentElement;
     const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; });
-  readCache().then(c => { if (c && c.results && !records.length){ hydrate(c.results, c.meta); cacheStatus(true, 'Dati ripresi dalla memoria del dispositivo ✓'); } });
+  // File arrivati con "Condividi su Staff": il service worker li ha messi nella cache INBOX.
+  // Si caricano dopo i dati salvati, così si sommano a quelli invece di sostituirli.
+  async function takeInbox(){
+    if (!/[?&]condiviso=1/.test(location.search)) return;
+    history.replaceState(null, '', location.pathname);
+    if (!('caches' in window)) return;
+    const box = await caches.open('sod-inbox'), keys = await box.keys(), files = [];
+    for (const k of keys){
+      const r = await box.match(k);
+      const name = decodeURIComponent(r.headers.get('X-Name') || 'rota.xlsx');
+      files.push(new File([await r.blob()], name, { lastModified: +r.headers.get('X-Modified') || Date.now() }));
+      await box.delete(k);
+    }
+    if (files.length) await load(files);
+  }
+  readCache().then(c => { if (c && c.results && !records.length){ hydrate(c.results, c.meta); cacheStatus(true, 'Dati ripresi dalla memoria del dispositivo ✓'); } })
+    .then(takeInbox).catch(e => console.warn('Condivisione non caricata', e));
+  addEventListener('visibilitychange', () => { if (!document.hidden) checkStale(); });
   // ---------- PWA: installazione e funzionamento offline ----------
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost','127.0.0.1'].includes(location.hostname))){
     navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service worker non registrato', e));
@@ -958,7 +988,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
   addEventListener('orientationchange', syncNav);
 
   let rw; addEventListener('resize', () => { syncNav(); clearTimeout(rw); rw = setTimeout(renderDuty, 200); });
-  setInterval(() => { if (st.view==='duty' && st.preset==='now' && records.length) applyPreset('now'); }, 60000);
+  setInterval(() => { checkStale(); if (st.view==='duty' && st.preset==='now' && records.length) applyPreset('now'); }, 60000);
 })();
 </script>
 </body>
