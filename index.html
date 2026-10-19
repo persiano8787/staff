@@ -525,7 +525,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     return best;
   }
 
-  // Nomi compatti: "PAYABYAB Kimberly" -> "Kimberly P." (lettere in più solo se serve a distinguere)
+  // Nomi compatti: "ROSSI Maria" -> "Maria R." (lettere in più solo se serve a distinguere)
   function buildShort(names){
     const parts = names.map(n => {
       const t = n.split(' '); let i = 0;
