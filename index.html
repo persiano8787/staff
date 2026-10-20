@@ -308,8 +308,11 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
                        'TR': 'Training?', 'SNP': '?', 'PAR': '?', 'INTR': '?' },
     // Orari confermati da Antonio che non sono nel template del file
     overrides: {
-      'SEC_DRIV': { 'D': ['08:00','18:00'], 'N': ['18:00','04:00'] },
       'MANAGER':  { '19': ['19:00','07:00'] }
+    },
+    // Disponibile ma senza turno assegnato (chi chiamare in emergenza): non e' "in servizio"
+    availCodes: {
+      'SEC_DRIV': { 'D': 'Disponibile giorno, senza turno', 'N': 'Disponibile notte, senza turno' }
     },
     // Durata ipotizzata per numeri non mappati (ore)
     defaultHours: { 'MANAGER': 10, '_driver': 10, '_default': 8 }
@@ -446,7 +449,9 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
                         startDT: null, endDT: null, hours: null, estimated: false, source: cell };
 
           const known = overrides[code] ? { start: overrides[code][0], end: overrides[code][1] } : codeMap[code];
-          if (CONFIG.offCodes[code]) { rec.type = 'off'; rec.label = CONFIG.offCodes[code]; }
+          const avail = (CONFIG.availCodes[dept] || {})[code];
+          if (avail) { rec.type = 'off'; rec.label = avail; }
+          else if (CONFIG.offCodes[code]) { rec.type = 'off'; rec.label = CONFIG.offCodes[code]; }
           else if (CONFIG.absenceCodes[code]) { rec.type = 'absence'; rec.label = CONFIG.absenceCodes[code]; }
           else if (known && known.start) { rec.type = 'shift'; rec.start = known.start; rec.end = known.end; }
           else if (known && known.absence) { rec.type = 'absence'; rec.label = known.preset; }
@@ -814,7 +819,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     const i = records.indexOf(r);
     if (r.type==='shift') return `<div class="c s k-${band(r)} ${r.estimated?'est':''}" data-r="${i}">${hm(r.start)}${nextDay(r)?'›':''}</div>`;
     if (r.type==='absence') return `<div class="c ${r.code==='SICK'?'k':'a'}" data-r="${i}">${esc(r.code)}</div>`;
-    if (r.type==='off') return `<div class="c o" data-r="${i}">X</div>`;
+    if (r.type==='off') return `<div class="c o" data-r="${i}">${esc(r.code==='X' ? 'X' : r.code)}</div>`;
     return `<div class="c u" data-r="${i}">${esc(r.code || '?')}</div>`;
   }
 
