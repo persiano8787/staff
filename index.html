@@ -309,7 +309,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     // Orari confermati da Antonio che non sono nel template del file
     overrides: {
       'SEC_DRIV': { 'D8': ['08:00','18:00'], 'D18': ['18:00','04:00'] },   // driver, turni da 10 ore
-      'MANAGER':  { '7': ['07:00','19:00'], '19': ['19:00','07:00'] }    // manager, turni da 12 ore
+      'MANAGER':  { '7': ['07:00','15:00'], '19': ['19:00','07:00'] }    // il 7 puo' diventare da 12 ore: vedi managerDays
     },
     // Disponibile ma senza turno assegnato (chi chiamare in emergenza): non e' "in servizio"
     availCodes: {
@@ -488,8 +488,27 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
       }
     });
 
+    if (dept === 'MANAGER') managerDays(out, issue);
     out.stats.employees = people.size;
     return out;
+  }
+
+  // Nel turno c'e' sempre almeno un manager. Il 7 e' da 8 ore, ma se quel giorno nessuno entra
+  // alle 15 e qualcuno entra alle 19, chi entra alle 7 copre fino alle 19 (12 ore).
+  // Doppia verifica: nei giorni col 19 devono esserci solo due manager, uno alle 7 e uno alle 19.
+  function managerDays(out, issue) {
+    const byDate = {};
+    out.records.filter(r => r.type === 'shift').forEach(r => (byDate[r.date] = byDate[r.date] || []).push(r));
+    for (const [date, rs] of Object.entries(byDate)) {
+      const at = h => rs.filter(r => r.start === h);
+      if (!at('19:00').length) continue;
+      if (!at('15:00').length) at('07:00').forEach(r => {
+        r.end = '19:00'; r.hours = 12; r.endDT = `${date}T19:00`; r.estimated = false;
+      });
+      if (rs.length !== 2 || at('07:00').length !== 1 || at('19:00').length !== 1)
+        issue('warn', 'Giorno con manager alle 19: attesi solo due manager, uno alle 7 e uno alle 19',
+              `${date} ${rs.map(r => r.start.slice(0, 2) + ' ' + r.name).join(', ')}`);
+    }
   }
 
   // "Chi è in servizio" in un istante (ora locale Malta, formato 'YYYY-MM-DDTHH:MM')
