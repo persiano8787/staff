@@ -224,6 +224,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
 
 <main class="wrap">
   <label class="stale hidden" id="stale" for="files2"></label>
+  <div class="stale hidden" id="ending" style="cursor:default"></div>
   <label class="drop" id="drop">
     <input type="file" id="files" multiple accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12">
     <h2>Carica i rota</h2>
@@ -685,7 +686,22 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
 
   // Avviso "dati vecchi": i rota cambiano ogni giorno, dopo 12 ore dall'ultimo caricamento va detto.
   const STALE_H = 12;
+  // Avviso "rota in scadenza": i file sono annuali. Quando HR crea quelli dell'anno nuovo i vecchi
+  // restano, il flusso roster sync non fallisce e nessuno se ne accorge: lo dice l'app.
+  const ENDING_DAYS = 14;
+  function checkEnding(){
+    const el = $('ending'), last = {};
+    records.forEach(r => { if (!last[r.dept] || r.date > last[r.dept]) last[r.dept] = r.date; });
+    const limit = fmtD(addD(new Date(), ENDING_DAYS));
+    const short = Object.entries(last).filter(([, d]) => d < limit);
+    el.classList.toggle('hidden', !short.length);
+    if (!short.length) return;
+    const end = short.map(([, d]) => d).sort()[0], [y, m, g] = end.split('-');
+    el.innerHTML = `I rota di ${short.map(([k]) => esc(dl(k))).join(', ')} finiscono il ${+g}/${+m}/${y}.<small>Se HR ha già creato i file dell'anno nuovo, aggiorna i percorsi nel flusso roster sync di Power Automate.</small>`;
+  }
+
   function checkStale(){
+    checkEnding();
     const el = $('stale');
     if (!loadedAt || !results.length){ el.classList.add('hidden'); return; }
     const h = Math.floor((Date.now() - loadedAt) / 3600000);
