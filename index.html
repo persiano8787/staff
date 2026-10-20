@@ -495,8 +495,8 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
 
   // Nel turno c'e' sempre almeno un Gaming Manager. Il 7 e' da 8 ore, ma se quel giorno nessuno
   // entra alle 15 e qualcuno entra alle 19, chi entra alle 7 copre fino alle 19 (12 ore).
-  // Doppia verifica: nei giorni col 19 devono esserci solo due manager, uno alle 7 e uno alle 19.
-  // I Pit Boss stanno nello stesso file ma non contano (11 e 21, turni loro).
+  // Doppia verifica: nei giorni col 19 ci deve essere un solo 7 e un solo 19. Altri manager di
+  // notte (23, 21...) vanno bene: il doppio manager di notte e' normale. I Pit Boss stanno nello stesso file ma non contano (11 e 21, turni loro).
   function managerDays(out, issue) {
     const byDate = {};
     out.records.filter(r => r.type === 'shift' && !/pit boss/i.test(r.role)).forEach(r => (byDate[r.date] = byDate[r.date] || []).push(r));
@@ -506,8 +506,8 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
       if (!at('15:00').length) at('07:00').forEach(r => {
         r.end = '19:00'; r.hours = 12; r.endDT = `${date}T19:00`; r.estimated = false;
       });
-      if (rs.length !== 2 || at('07:00').length !== 1 || at('19:00').length !== 1)
-        issue('warn', 'Giorno con manager alle 19: attesi solo due manager, uno alle 7 e uno alle 19',
+      if (at('07:00').length !== 1 || at('19:00').length !== 1)
+        issue('warn', 'Giorno con manager alle 19: atteso un solo manager alle 7 e uno solo alle 19',
               `${date} ${rs.map(r => r.start.slice(0, 2) + ' ' + r.name).join(', ')}`);
     }
   }
