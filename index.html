@@ -309,7 +309,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
     // Orari confermati da Antonio che non sono nel template del file
     overrides: {
       'SEC_DRIV': { 'D8': ['08:00','18:00'], 'D18': ['18:00','04:00'] },   // driver, turni da 10 ore
-      'MANAGER':  { '7': ['07:00','15:00'], '19': ['19:00','07:00'] }    // il 7 puo' diventare da 12 ore: vedi managerDays
+      'MANAGER':  { '7': ['07:00','15:00'], '18': ['18:00','02:00'], '19': ['19:00','07:00'] }    // il 7 puo' diventare da 12 ore: vedi managerDays
     },
     // Disponibile ma senza turno assegnato (chi chiamare in emergenza): non e' "in servizio"
     availCodes: {
@@ -794,7 +794,7 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
       for (const [name, rs] of per){
         const bars = rs.map(r => { const s = P(r.startDT).getTime(), e = P(r.endDT).getTime();
           const l = Math.max(0,pct(s)), w = Math.min(100,pct(e)) - l;
-          return `<div class="bar k-${band(r)} ${/poker/i.test(r.role)?'pk':''} ${r.estimated?'est':''} ${s<A?'cl':''} ${e>B?'cr':''}" style="left:${l}%;width:${w}%" data-r="${records.indexOf(r)}">${shiftShort(r)}</div>`; }).join('');
+          return `<div class="bar k-${band(r)} ${/poker/i.test(r.role) || /^PS/.test(r.code)?'pk':''} ${r.estimated?'est':''} ${s<A?'cl':''} ${e>B?'cr':''}" style="left:${l}%;width:${w}%" data-r="${records.indexOf(r)}">${shiftShort(r)}</div>`; }).join('');
         body += `<div class="tr"><div class="who"><span class="nm">${esc(sn(name))}</span><span class="rl">${esc(rs[0].role)}</span></div><div class="trk">${gl}${bars}${nowL}</div></div>`;
       }
       if (ab.length) body += `<div class="abs-line">Assenti: ${ab.map(r=>`${esc(sn(r.name))} (${esc(r.code)})`).join(', ')}</div>`;
