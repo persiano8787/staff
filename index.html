@@ -381,9 +381,16 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
       if (!rows.length) return;
 
-      // Mese dalla riga 1 (fallback: nome del foglio)
-      const hdr = (rows[0] || []).map(clean).join(' ').toUpperCase() + ' ' + sheetName.toUpperCase();
-      const mIdx = MONTHS.findIndex(m => hdr.includes(m));
+      // Mese: prima il nome del foglio, poi il PRIMO mese da sinistra in riga 1.
+      // (A dicembre la riga 1 ha "DECEMBER" in L1 e "JANUARY" in AG1, sopra i giorni di gennaio:
+      // cercare i mesi in ordine di calendario prendeva JANUARY e scartava il foglio.)
+      const firstMonthIn = s => {
+        let best = -1, pos = Infinity;
+        MONTHS.forEach((m, i) => { const p = s.indexOf(m); if (p >= 0 && p < pos) { pos = p; best = i; } });
+        return best;
+      };
+      let mIdx = firstMonthIn(sheetName.toUpperCase());
+      if (mIdx < 0) mIdx = firstMonthIn((rows[0] || []).map(clean).join(' ').toUpperCase());
       if (mIdx < 0) { issue('warn', 'Mese non riconosciuto, foglio ignorato', sheetName); return; }
       const month = mIdx + 1;
 
@@ -398,14 +405,20 @@ table.g{border-collapse:separate;border-spacing:0;font-size:13px}
       // Anno: dalla riga date se presente, altrimenti dal nome file, altrimenti anno corrente
       const dateRowCandidate = rows[dayRow + 1] || [];
       const firstDate = dateRowCandidate.find(v => v instanceof Date);
+      // Se la riga date è dello stesso mese, l'anno viene da lì: così "January 27" nel file 2026 è gennaio 2027.
       const yearMatch = fileName.match(/20\d\d/);
-      const year = yearMatch ? Number(yearMatch[0]) : (firstDate ? new Date(firstDate.getTime() + 432e5).getFullYear() : new Date().getFullYear());
+      const fd = firstDate ? new Date(firstDate.getTime() + 432e5) : null;
+      const sheetYear = sheetName.match(/(?:^|\s)(?:20)?(\d{2})\s*$/);   // "January 27" / "January 2027"
+      const year = fd && fd.getMonth() + 1 === month ? fd.getFullYear()
+                 : sheetYear ? 2000 + Number(sheetYear[1])
+                 : yearMatch ? Number(yearMatch[0]) : (fd ? fd.getFullYear() : new Date().getFullYear());
 
-      if (seenMonths[month]) {
-        issue('warn', `Due fogli visibili per lo stesso mese: uso "${seenMonths[month]}", ignoro questo`, sheetName);
+      const mKey = `${year}-${pad(month)}`;
+      if (seenMonths[mKey]) {
+        issue('warn', `Due fogli visibili per lo stesso mese: uso "${seenMonths[mKey]}", ignoro questo`, sheetName);
         return;
       }
-      seenMonths[month] = sheetName;
+      seenMonths[mKey] = sheetName;
 
       // Colonne valide: giorno <= giorni del mese e (se c'è) data coerente con il mese
       const dim = daysInMonth(year, month);
